@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>碳平衡射手 — Carbon Balance Shooter</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="wrap">
+
+    <!-- 游戏画布 -->
+    <canvas id="c" width="900" height="650"></canvas>
+
+    <!-- 顶部 HUD 统一栏 -->
+    <div class="hud" id="hud">
+      <div class="hud-left">
+      <div class="badge badge-timer">
+        <span class="pill">⏱</span>
+        <span id="timer" class="timer-val">5:00</span>
+      </div>
+      <div class="badge badge-score">
+        <span class="pill">🍎 生态积分</span>
+        <span id="score" class="score-val">0</span>
+        <span class="pill" id="scoreTarget">/4000</span>
+      </div>
+      <div class="badge badge-clog">
+        <span id="clog" class="clog-val">堵塞 0/3</span>
+      </div>
+      <div class="badge badge-leak">
+        <span id="leak" class="leak-val">泄露 0/3</span>
+      </div>
+        <div class="badge badge-shots">
+          <span id="shots" class="shots-val">🔫30</span>
+        </div>
+        <div class="badge badge-hand">
+          <span id="handLabel" class="hand-val">O₂</span>
+          <span class="pill">Space切换</span>
+        </div>
+      </div>
+      <div class="hud-right">
+        <button id="toggleBtn" class="hand-o2">切换手牌</button>
+        <button id="menuBtn">🏠 菜单</button>
+      </div>
+    </div>
+
+    <div id="comboDisplay" class="combo-box" style="display:none;"></div>
+
+    <div class="info-icons" id="infoIcons">
+      <button class="info-icon-btn" data-panel="gameplay" title="玩法说明">🎮</button>
+      <button class="info-icon-btn" data-panel="lore"     title="世界观">📖</button>
+    </div>
+
+    <div class="info-panel" id="infoPanel">
+      <div class="info-panel-card" id="infoPanelCard">
+        <button class="info-panel-close" id="infoPanelClose">✕</button>
+        <div id="infoPanelContent"></div>
+      </div>
+    </div>
+
+    <div class="overlay" id="overlay">
+      <div class="card">
+        <div style="font-size:46px;margin-top:4px;" id="endIcon">⚫💨💥</div>
+        <h1 id="endTitle">系统停机</h1>
+        <p id="endMsg">排放通道出现故障，请检查堵塞与泄露状态。</p>
+        <div class="row">
+          <button id="restartBtn2">重新挑战</button>
+          <button id="lvlSelectBtn">关卡选择</button>
+        </div>
+        <div class="small" style="margin-top:12px;">
+          注入 💧 水雾喷淋吸收 CO₂ | 注入 🔵 氧气燃烧碳颗粒 | <span class="kbd">Space</span> 切换调控手段
+        </div>
+      </div>
+    </div>
+
+    <div class="tutorial-overlay visible" id="tutorialOverlay">
+      <div class="tutorial-card">
+        <div class="tut-progress" id="tutDots"></div>
+        <h2 id="tutTitle">欢迎加入</h2>
+        <p id="tutMsg">用 💧水 和 🔵氧气 改变轨道上的碳循环</p>
+        <div class="tut-actions">
+          <button id="tutSkip" class="tut-skip-btn">跳过教学 →</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="menuModal" class="modal" aria-hidden="true">
+      <div class="modal-backdrop" id="menuModalBackdrop"></div>
+      <div class="modal-panel" role="dialog" aria-modal="true">
+        <div class="modal-icon">⏸️</div>
+        <div class="modal-title">返回主菜单？</div>
+        <div class="modal-desc">当前局进度将不会保留。</div>
+        <div class="modal-actions">
+          <button id="menuModalCancel" class="mbtn mbtn-ghost">继续游戏</button>
+          <button id="menuModalConfirm" class="mbtn mbtn-danger">确认返回</button>
+        </div>
+        <div class="modal-hint">Esc 关闭 · Enter 继续</div>
+      </div>
+    </div>
+
+    <!-- 小清新：主菜单 -->
+    <div id="mainMenu" class="screen is-active" aria-hidden="false">
+      <div class="skyBg"></div>
+      <div class="panel">
+        <div class="logo">
+          <div class="logo-badge">🌿</div>
+          <div>
+            <div class="logo-title">碳平衡射手</div>
+            <div class="logo-sub">工厂排放通道守护行动</div>
+          </div>
+        </div>
+        <div class="menuActions">
+          <button id="btnToLevelSelect" class="gbtn gbtn-primary">开始游戏</button>
+        </div>
+        <div class="menuFooter">
+          <div class="tip">C 到终点会 <b>堵塞</b>，CO/CO₂ 到终点会 <b>泄露</b> ☣</div>
+          <div class="xsmall">Space 切换弹药 · 点击轨道间隙插入</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 小清新：关卡选择 -->
+    <div id="levelSelect" class="screen" aria-hidden="true">
+      <div class="skyBg"></div>
+      <div class="panel panel-wide">
+        <div class="topbar">
+          <button id="btnBackToMenu" class="gbtn gbtn-ghost">← 返回主菜单</button>
+          <div class="topbar-title">关卡选择</div>
+          <div style="width:120px"></div>
+        </div>
+        <div class="grid">
+          <div class="card" data-level="0">
+            <div class="card-head">
+              <div class="chip chip-green">教学</div>
+              <div class="card-title">新手教程</div>
+            </div>
+            <div class="card-desc">学习插入、三消、燃烧与光合作用。弹药无限，无失败。</div>
+            <div class="meta">
+              <span class="pill">时间：无限</span><span class="pill">目标：3000分</span><span class="pill">弹药：无限</span>
+            </div>
+            <button class="gbtn gbtn-primary card-btn">开始</button>
+          </div>
+          <div class="card" data-level="1">
+            <div class="card-head">
+              <div class="chip chip-blue">标准</div>
+              <div class="card-title">城市呼吸</div>
+            </div>
+            <div class="card-desc">有限弹药，精准连锁冲分。CO₂ 出现，学会用水净化。</div>
+            <div class="meta">
+              <span class="pill">目标：8000分</span><span class="pill">时限：3:00</span><span class="pill">O₂10/💧8</span>
+            </div>
+            <button class="gbtn gbtn-primary card-btn">开始</button>
+          </div>
+          <div class="card card-hard" data-level="2">
+            <div class="card-head">
+              <div class="chip chip-red">地狱</div>
+              <div class="card-title">碳过载 · 极限封锁</div>
+            </div>
+            <div class="card-desc">超高分 + 极少弹药 + 零容错。连锁布局决定胜负。</div>
+            <div class="meta">
+              <span class="pill">目标：20000分</span><span class="pill">时限：2:00</span><span class="pill">O₂10/💧5</span>
+            </div>
+            <button class="gbtn gbtn-primary card-btn">开始</button>
+          </div>
+        </div>
+        <div class="menuFooter">
+          <div class="tip">选择关卡后进入排放通道，保持"清堵防漏"平衡。</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
